@@ -33,8 +33,16 @@ public class EZConfiguration {
     public static boolean maxItemTypesAutoMode;
 
     @Config.Comment("Focus the input field when opening a storage GUI.")
-    @Config.DefaultBoolean(true)
+    @Config.DefaultBoolean(false)
     public static boolean focusGuiInput;
+
+    @Config.Comment("Save the input field in storage GUI.")
+    @Config.DefaultBoolean(false)
+    public static boolean saveGuiInput;
+
+    @Config.Comment("Save the input field in storage GUI.")
+    @Config.DefaultBoolean(false)
+    public static boolean damageablePutAll;
 
     @Config.Comment("Enables experimental content that might not be stable enough or has known quirks.")
     @Config.DefaultBoolean(false)

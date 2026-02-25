@@ -22,7 +22,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
 
     public InventoryCrafting craftMatrix = new InventoryCrafting(this, 3, 3);
     public IInventory craftResult = new InventoryCraftResult();
-    private World worldObj;
+    private final World worldObj;
 
     public ContainerStorageCoreCrafting(EntityPlayer player, World world, EZInventory inventory) {
         this(player, world);
@@ -54,7 +54,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
     // Shift clicking
     @Override
     public ItemStack transferStackInSlot(EntityPlayer playerIn, int index) {
-        Slot slotObject = (Slot) inventorySlots.get(index);
+        Slot slotObject = inventorySlots.get(index);
         if (slotObject != null && slotObject.getHasStack()) {
             if (slotObject instanceof SlotCrafting) {
                 boolean hasChanges = false;
@@ -119,7 +119,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
     @Override
     public ItemStack slotClick(int slotId, int clickedButton, int mode, EntityPlayer playerIn) {
         if (slotId > 0 && mode == 0 && clickedButton == 0) {
-            if (slotId >= 0 && inventorySlots.size() > slotId) {
+            if (inventorySlots.size() > slotId) {
                 Slot slotObject = inventorySlots.get(slotId);
                 if (slotObject != null) {
                     if (slotObject instanceof SlotCrafting) {
@@ -163,7 +163,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
                 }
                 ItemStack result = this.inventory.input(stackInSlot);
                 if (result == null) {
-                    playerIn.dropPlayerItemWithRandomChoice(result, false);
+                    playerIn.dropPlayerItemWithRandomChoice(null, false);
                 }
                 hasChanges = true;
             }
@@ -176,9 +176,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
             ItemStack retreived = null;
             boolean hasItem = false;
 
-            for (int k = 0; k < recipeItems.length; k++) {
-                ItemStack recipeItem = recipeItems[k];
-
+            for (ItemStack recipeItem : recipeItems) {
                 if (recipeItem == null) {
                     continue;
                 }
@@ -191,15 +189,12 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
 
                 boolean foundInPlayerInv = false;
                 if (usePlayerInv) {
-                    Integer playerInvSize = playerIn.inventory.mainInventory.length;
+                    int playerInvSize = playerIn.inventory.mainInventory.length;
                     for (int i = 0; i < playerInvSize; i++) {
                         ItemStack playerItem = playerIn.inventory.mainInventory[i];
                         if (playerItem != null && playerItem.isItemEqual(recipeItem)) {
-                            ArrayList<Slot> targetSlots = playerInvSlotsMapping.get(i);
-                            if (targetSlots == null) {
-                                targetSlots = new ArrayList<>();
-                                playerInvSlotsMapping.put(i, targetSlots);
-                            }
+                            ArrayList<Slot> targetSlots = playerInvSlotsMapping
+                                .computeIfAbsent(i, k -> new ArrayList<>());
                             if (playerItem.stackSize > targetSlots.size()) {
                                 targetSlots.add(slot);
                                 foundInPlayerInv = true;
@@ -214,13 +209,11 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
                     break;
                 }
 
-                if (retreived == null && !foundInPlayerInv) {
-                    retreived = inventory.getItems(new ItemStack[] { recipeItem });
-                    if (retreived != null) {
-                        hasChanges = true;
-                        hasItem = true;
-                        break;
-                    }
+                retreived = inventory.getItems(new ItemStack[] { recipeItem });
+                if (retreived != null) {
+                    hasChanges = true;
+                    hasItem = true;
+                    break;
                 }
             }
 
@@ -231,7 +224,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
             }
         }
 
-        if (usePlayerInv && playerInvSlotsMapping.size() != 0) {
+        if (usePlayerInv && !playerInvSlotsMapping.isEmpty()) {
             Set<Entry<Integer, ArrayList<Slot>>> set = playerInvSlotsMapping.entrySet();
             for (Entry<Integer, ArrayList<Slot>> entry : set) {
                 Integer playerInvSlotId = entry.getKey();
@@ -241,7 +234,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
                 if (playerInvSlot == null) {
                     continue;
                 }
-                int itemsToRequest = (int) (playerInvSlot.stackSize / targetSlotsCount);
+                int itemsToRequest = playerInvSlot.stackSize / targetSlotsCount;
 
                 for (int j = 0; j < targetSlotsCount; j++) {
                     Slot targetSlot = targetSlots.get(j);
@@ -256,11 +249,7 @@ public class ContainerStorageCoreCrafting extends ContainerStorageCore {
                         itemsToRequest = playerInvSlot.stackSize;
                     }
                     ItemStack retrived = playerIn.inventory.decrStackSize(playerInvSlotId, itemsToRequest);
-                    if (retrived != null) {
-                        targetSlot.putStack(retrived);
-                    } else {
-                        targetSlot.putStack(null); // Ensure slot it is cleared!
-                    }
+                    targetSlot.putStack(retrived);
                 }
             }
         }

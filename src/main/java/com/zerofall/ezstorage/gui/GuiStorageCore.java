@@ -3,10 +3,11 @@ package com.zerofall.ezstorage.gui;
 import java.text.DecimalFormat;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import net.minecraft.client.gui.FontRenderer;
+import net.minecraft.client.gui.GuiButton;
 import net.minecraft.client.gui.GuiScreen;
 import net.minecraft.client.gui.GuiTextField;
 import net.minecraft.client.gui.inventory.GuiContainer;
@@ -16,7 +17,6 @@ import net.minecraft.item.ItemStack;
 import net.minecraft.util.EnumChatFormatting;
 import net.minecraft.util.MathHelper;
 import net.minecraft.util.ResourceLocation;
-import net.minecraft.world.World;
 
 import org.lwjgl.input.Mouse;
 import org.lwjgl.opengl.GL11;
@@ -33,6 +33,7 @@ import com.zerofall.ezstorage.util.ItemStackCountComparator;
 
 import codechicken.nei.SearchField;
 import codechicken.nei.api.ItemFilter;
+import cpw.mods.fml.client.config.GuiCheckBox;
 import cpw.mods.fml.common.Optional.Method;
 
 public class GuiStorageCore extends GuiContainer {
@@ -50,9 +51,12 @@ public class GuiStorageCore extends GuiContainer {
     protected boolean wasClicking = false;
     protected GuiTextField searchField;
     protected ItemStack mouseOverItem;
-    protected List<ItemStack> filteredList = new ArrayList<ItemStack>();
+    protected List<ItemStack> filteredList = new ArrayList<>();
     protected LocalDateTime inventoryUpdateTimestamp;
     protected boolean needFullUpdate;
+
+    protected GuiCheckBox chkBoxSave;
+    protected GuiCheckBox chkBoxFocus;
 
     @Override
     public void initGui() {
@@ -68,17 +72,33 @@ public class GuiStorageCore extends GuiContainer {
         this.searchField.setTextColor(0xFFFFFF);
         this.searchField.setCanLoseFocus(true);
         this.searchField.setFocused(EZConfiguration.focusGuiInput);
-        this.searchField.setText(searchText);
+        if (EZConfiguration.saveGuiInput) this.searchField.setText(searchText);
+
+        chkBoxSave = new GuiCheckBox(11, guiLeft + 100, guiTop + 4, "S", EZConfiguration.saveGuiInput);
+        chkBoxFocus = new GuiCheckBox(12, guiLeft + 120, guiTop + 4, "A", EZConfiguration.focusGuiInput);
+        buttonList.add(chkBoxSave);
+        buttonList.add(chkBoxFocus);
     }
 
-    public GuiStorageCore(EntityPlayer player, World world, int x, int y, int z) {
-        this(new ContainerStorageCore(player), world, x, y, z);
+    public GuiStorageCore(EntityPlayer player) {
+        this(new ContainerStorageCore(player));
     }
 
-    public GuiStorageCore(ContainerStorageCore containerStorageCore, World world, int x, int y, int z) {
+    public GuiStorageCore(ContainerStorageCore containerStorageCore) {
         super(containerStorageCore);
         this.xSize = 195;
         this.ySize = 222;
+    }
+
+    @Override
+    protected void actionPerformed(GuiButton button) {
+        if (button == chkBoxSave) {
+            EZConfiguration.saveGuiInput = chkBoxSave.isChecked();
+            EZConfiguration.save();
+        } else if (button == chkBoxFocus) {
+            EZConfiguration.focusGuiInput = chkBoxFocus.isChecked();
+            EZConfiguration.save();
+        }
     }
 
     public EZInventory getInventory() {
@@ -121,7 +141,7 @@ public class GuiStorageCore extends GuiContainer {
             fontRendererObj.drawString(amount, 187 - stringWidth, 6, 4210752);
         }
 
-        int x = 8;
+        int x;
         int y = 18;
         this.zLevel = 100.0F;
         itemRender.zLevel = 100.0F;
@@ -142,9 +162,9 @@ public class GuiStorageCore extends GuiContainer {
                 }
 
                 ItemStack stack = this.filteredList.get(index);
-                FontRenderer font = null;
+                FontRenderer font;
                 if (stack != null) {
-                    font = stack.getItem()
+                    font = Objects.requireNonNull(stack.getItem())
                         .getFontRenderer(stack);
                     if (font == null) font = fontRendererObj;
                     RenderHelper.enableGUIStandardItemLighting();
@@ -217,11 +237,11 @@ public class GuiStorageCore extends GuiContainer {
             // Simply refresh the list & sort
             filteredList.clear();
             filterItems(searchText, getInventory().inventory);
-            Collections.sort(filteredList, new ItemStackCountComparator());
+            filteredList.sort(new ItemStackCountComparator());
             needFullUpdate = false;
         } else {
             // Modify the current list to keep the current sorting
-            List<ItemStack> listNewStacks = new ArrayList<ItemStack>();
+            List<ItemStack> listNewStacks = new ArrayList<>();
 
             // Adjust stacksize for items present in the list
             for (ItemStack stackSrc : getInventory().inventory) {
@@ -256,7 +276,7 @@ public class GuiStorageCore extends GuiContainer {
             }
 
             // Insert new items at the end
-            if (listNewStacks.size() != 0) {
+            if (!listNewStacks.isEmpty()) {
                 filterItems(searchText, listNewStacks);
             }
 
@@ -265,7 +285,7 @@ public class GuiStorageCore extends GuiContainer {
     }
 
     private void filterItems(String searchText, List<ItemStack> input) {
-        if (searchText.length() == 0) {
+        if (searchText.isEmpty()) {
             filteredList.addAll(input);
         } else if (ModIds.NEI.isLoaded()) {
             filterItemsViaNei(searchText, input);
@@ -332,7 +352,7 @@ public class GuiStorageCore extends GuiContainer {
     @Override
     protected void mouseClicked(int mouseX, int mouseY, int mouseButton) {
         Integer slot = getSlotAt(mouseX, mouseY);
-        boolean searchFieldFocused = searchField.isFocused();
+        boolean searchFieldFocused;
         if (slot != null) {
             int mode = 0;
             if (GuiScreen.isShiftKeyDown()) {
@@ -388,8 +408,7 @@ public class GuiStorageCore extends GuiContainer {
             if (column < 9) {
                 int row = clickedY / 18;
                 if (row < this.rowsVisible()) {
-                    int slot = (row * 9) + column + (scrollRow * 9);
-                    return slot;
+                    return (row * 9) + column + (scrollRow * 9);
                 }
             }
         }

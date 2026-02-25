@@ -35,7 +35,7 @@ public class GuiHandler implements IGuiHandler {
     @Override
     public Object getClientGuiElement(int ID, EntityPlayer player, World world, int x, int y, int z) {
         if (ID == 1) {
-            return new GuiStorageCore(player, world, x, y, z);
+            return new GuiStorageCore(player);
         } else if (ID == 2) {
             return new GuiCraftingCore(player, world, x, y, z);
         }

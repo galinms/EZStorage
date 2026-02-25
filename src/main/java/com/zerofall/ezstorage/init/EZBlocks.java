@@ -54,7 +54,7 @@ public class EZBlocks {
         GameRegistry.registerBlock(input_port, input_port.getUnlocalizedName().substring(5));
         GameRegistry.registerTileEntity(TileEntityInventoryProxy.class, "TileEntityInputPort");
         GameRegistry.registerBlock(crafting_box, crafting_box.getUnlocalizedName().substring(5));
-        if (EZConfiguration.experimentalContent) {
+        if (!EZConfiguration.experimentalContent) {
             // This blocks add new options to the game not intended to be included into this mod.
             // Maybe will move them to another mod, an add-on.
             GameRegistry.registerBlock(storage_panel, storage_panel.getUnlocalizedName().substring(5));
@@ -73,8 +73,8 @@ public class EZBlocks {
         GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(hyper_storage_box), "ABA", "ACA", "AAA", 'A', Blocks.obsidian, 'B', Items.nether_star, 'C', condensed_storage_box));
         GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(input_port), " A ", " B ", " C ", 'A', Blocks.hopper, 'B', Blocks.piston, 'C', "blockQuartz"));
         GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(crafting_box), " A ", " B ", " C ", 'A', Items.ender_pearl, 'B', Blocks.crafting_table, 'C', "gemDiamond"));
-        GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(storage_panel), "ABA", "BCB", "ABA", 'A', "logWood", 'B', "stickWood", 'C', "plankWood"));
-        
+        GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(storage_panel), "   ", " A ", "   ", 'A', new ItemStack(Items.diamond_shovel, 1, 2)));
+
         if (EZConfiguration.experimentalContent) {
             GameRegistry.addRecipe(new ShapedOreRecipe(new ItemStack(storage_cable, 16), "ABA", "BBB", "ABA", 'A', "logWood", 'B', "stickWood"));
         }

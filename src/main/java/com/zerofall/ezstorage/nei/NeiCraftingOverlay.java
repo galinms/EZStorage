@@ -1,6 +1,7 @@
 package com.zerofall.ezstorage.nei;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -19,6 +20,7 @@ import com.zerofall.ezstorage.gui.GuiStorageCore;
 import com.zerofall.ezstorage.network.client.MsgReqCrafting;
 import com.zerofall.ezstorage.util.EZInventory;
 
+import codechicken.nei.NEIServerUtils;
 import codechicken.nei.PositionedStack;
 import codechicken.nei.api.IOverlayHandler;
 import codechicken.nei.recipe.GuiOverlayButton.ItemOverlayState;
@@ -30,10 +32,10 @@ public class NeiCraftingOverlay implements IOverlayHandler {
     public void overlayRecipe(final GuiContainer gui, final IRecipeHandler recipe, final int recipeIndex,
         final boolean shift) {
         final List<PositionedStack> ingredients = recipe.getIngredientStacks(recipeIndex);
-        overlayRecipe(gui, ingredients, shift);
+        overlayRecipe(gui, ingredients);
     }
 
-    public void overlayRecipe(final GuiContainer gui, final List<PositionedStack> ingredients, final boolean shift) {
+    public void overlayRecipe(final GuiContainer gui, final List<PositionedStack> ingredients) {
         if (!(gui instanceof com.zerofall.ezstorage.gui.GuiCraftingCore)) {
             return;
         }
@@ -54,11 +56,8 @@ public class NeiCraftingOverlay implements IOverlayHandler {
                 }
 
                 final NBTTagList tags = new NBTTagList();
-                final List<ItemStack> list = new LinkedList<ItemStack>();
 
-                for (int x = 0; x < positionedStack.items.length; x++) {
-                    list.add(positionedStack.items[x]);
-                }
+                final List<ItemStack> list = new LinkedList<>(Arrays.asList(positionedStack.items));
 
                 for (final ItemStack is : list) {
                     final NBTTagCompound tag = new NBTTagCompound();
@@ -76,7 +75,7 @@ public class NeiCraftingOverlay implements IOverlayHandler {
 
     @Override
     public List<ItemOverlayState> presenceOverlay(GuiContainer firstGui, IRecipeHandler recipe, int recipeIndex) {
-        List<ItemStack> invStacks = new ArrayList<ItemStack>();
+        List<ItemStack> invStacks = new ArrayList<>();
 
         // Collect slots of storage core
         if (firstGui instanceof GuiStorageCore coreGui) {
@@ -84,7 +83,7 @@ public class NeiCraftingOverlay implements IOverlayHandler {
             if (inventory != null) {
                 invStacks.addAll(
                     inventory.inventory.stream()
-                        .map(s -> s.copy())
+                        .map(ItemStack::copy)
                         .collect(Collectors.toCollection(ArrayList::new)));
             }
         }
@@ -98,18 +97,19 @@ public class NeiCraftingOverlay implements IOverlayHandler {
 
         for (PositionedStack stack : ingredients) {
             Optional<ItemStack> used = invStacks.stream()
-                .filter(is -> is.stackSize > 0 && stack.contains(is))
+                .filter(is -> is.stackSize > 0 && isStackContains(stack, is))
                 .findAny();
 
             itemPresenceSlots.add(new ItemOverlayState(stack, used.isPresent()));
 
-            if (used.isPresent()) {
-                ItemStack is = used.get();
-                is.stackSize -= 1;
-            }
+            used.ifPresent(is -> is.stackSize -= 1);
         }
-
         return itemPresenceSlots;
+    }
+
+    private boolean isStackContains(PositionedStack stack, ItemStack is) {
+        for (ItemStack s : stack.items) if (NEIServerUtils.areStacksSameTypeCraftingWithNBT(s, is)) return true;
+        return false;
     }
 
     private List<ItemStack> getFromInventory(List<Slot> inventorySlots, EntityClientPlayerMP thePlayer) {

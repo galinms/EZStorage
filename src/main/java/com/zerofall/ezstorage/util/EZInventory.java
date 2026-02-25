@@ -1,7 +1,6 @@
 package com.zerofall.ezstorage.util;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import net.minecraft.item.ItemStack;
@@ -10,6 +9,8 @@ import net.minecraft.nbt.NBTTagList;
 
 import com.zerofall.ezstorage.EZStorage;
 import com.zerofall.ezstorage.configuration.EZConfiguration;
+
+import codechicken.nei.NEIServerUtils;
 
 public class EZInventory {
 
@@ -20,7 +21,7 @@ public class EZInventory {
     public boolean disabled;
 
     public EZInventory() {
-        inventory = new ArrayList<ItemStack>();
+        inventory = new ArrayList<>();
     }
 
     public boolean getHasChanges() {
@@ -42,14 +43,14 @@ public class EZInventory {
         }
         long space = maxItems - getTotalCount();
         // Only part of the stack can fit
-        int amount = (int) Math.min(space, (long) itemStack.stackSize);
+        int amount = (int) Math.min(space, itemStack.stackSize);
         ItemStack stack = mergeStack(itemStack, amount);
         setHasChanges();
         return stack;
     }
 
     public void sort() {
-        Collections.sort(this.inventory, new ItemStackCountComparator());
+        this.inventory.sort(new ItemStackCountComparator());
         setHasChanges();
     }
 
@@ -129,7 +130,8 @@ public class EZInventory {
     public ItemStack getItems(ItemStack[] itemStacks) {
         for (ItemStack group : inventory) {
             for (ItemStack itemStack : itemStacks) {
-                if (stacksEqual(group, itemStack)) {
+                if (EZConfiguration.damageablePutAll ? NEIServerUtils.areStacksSameTypeCraftingWithNBT(group, itemStack)
+                    : stacksEqual(group, itemStack)) {
                     if (group.stackSize >= itemStack.stackSize) {
                         ItemStack stack = group.copy();
                         stack.stackSize = itemStack.stackSize;
@@ -187,10 +189,7 @@ public class EZInventory {
         if (stack1Tag == null || stack2Tag == null) {
             return false;
         }
-        if (stack1Tag.equals(stack2Tag)) {
-            return true;
-        }
-        return false;
+        return stack1Tag.equals(stack2Tag);
     }
 
     public long getTotalCount() {
@@ -211,10 +210,10 @@ public class EZInventory {
         for (int i = 0; i < this.slotCount(); ++i) {
             ItemStack group = this.inventory.get(i);
             if (group != null && group.stackSize > 0) {
-                NBTTagCompound nbttagcompound1 = new NBTTagCompound();
-                group.writeToNBT(nbttagcompound1);
-                nbttagcompound1.setInteger("InternalCount", group.stackSize);
-                nbttaglist.appendTag(nbttagcompound1);
+                NBTTagCompound nbtTag = new NBTTagCompound();
+                group.writeToNBT(nbtTag);
+                nbtTag.setInteger("InternalCount", group.stackSize);
+                nbttaglist.appendTag(nbtTag);
             }
         }
         tag.setTag("Internal", nbttaglist);
@@ -226,18 +225,18 @@ public class EZInventory {
         NBTTagList nbttaglist = tag.getTagList("Internal", 10);
 
         if (nbttaglist != null) {
-            inventory = new ArrayList<ItemStack>();
+            inventory = new ArrayList<>();
             for (int i = 0; i < nbttaglist.tagCount(); ++i) {
-                NBTTagCompound nbttagcompound1 = nbttaglist.getCompoundTagAt(i);
-                ItemStack stack = ItemStack.loadItemStackFromNBT(nbttagcompound1);
+                NBTTagCompound nbtTag = nbttaglist.getCompoundTagAt(i);
+                ItemStack stack = ItemStack.loadItemStackFromNBT(nbtTag);
                 if (stack == null) {
                     EZStorage.instance.LOG.warn("An ItemStack loaded from NBT was null.");
                     continue;
                 }
-                if (nbttagcompound1.hasKey("InternalCount", 3)) {
-                    stack.stackSize = (int) nbttagcompound1.getInteger("InternalCount");
-                } else if (nbttagcompound1.hasKey("InternalCount", 4)) {
-                    stack.stackSize = (int) nbttagcompound1.getLong("InternalCount");
+                if (nbtTag.hasKey("InternalCount", 3)) {
+                    stack.stackSize = nbtTag.getInteger("InternalCount");
+                } else if (nbtTag.hasKey("InternalCount", 4)) {
+                    stack.stackSize = (int) nbtTag.getLong("InternalCount");
                 }
                 this.inventory.add(stack);
             }

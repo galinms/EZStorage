@@ -54,13 +54,11 @@ public class EZInventoryManager {
         NBTTagCompound tag = readFromFile(getFilePath(id));
         if (tag != null) {
             EZInventory inventory = new EZInventory();
-            if (inventory != null) {
-                inventory.readFromNBT(tag);
-                inventory.resetHasChanges();
-                inventory.id = id;
-                inventories.add(inventory);
-                return inventory;
-            }
+            inventory.readFromNBT(tag);
+            inventory.resetHasChanges();
+            inventory.id = id;
+            inventories.add(inventory);
+            return inventory;
         }
 
         // Inventory not found
@@ -68,7 +66,7 @@ public class EZInventoryManager {
     }
 
     public static void saveInventories() {
-        HashMap<String, NBTTagCompound> cache = new HashMap<String, NBTTagCompound>();
+        HashMap<String, NBTTagCompound> cache = new HashMap<>();
 
         // Write to NBT
         for (EZInventory inventory : inventories) {
@@ -114,7 +112,7 @@ public class EZInventoryManager {
                 synchronized (inventories) {
                     file.delete();
                 }
-            }).start();;
+            }).start();
         }
     }
 
@@ -127,7 +125,7 @@ public class EZInventoryManager {
         inventoryDir.mkdirs();
 
         // Inventory file
-        return new File(inventoryDir, id.toString() + ".dat");
+        return new File(inventoryDir, id + ".dat");
     }
 
     private static void saveToFile(NBTTagCompound tag, File file) {
